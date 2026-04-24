@@ -5,6 +5,7 @@ Scripts SQL aplicados **manualmente** no PostgreSQL (fora do Alembic), por ordem
 ## Índice útil
 
 - Migrações datadas `2026_*.sql`, `2027_*.sql`: evolução do schema e dados (ver também a lista longa no **`readme.md`** raiz, secção *Banco*).
+- **`2026_04_24_seed_checklist_loto_lider.sql`**: padrão **`LOTO_LIDER`** (tarefas de validação de liderança após o LOTO). Idempotente; complementa `2026_04_14_seed_checklists_obrigatorios.sql` (LOTO / `FINALIZACAO_OS`).
 - Ficheiros **`etapa*.sql`**: conjunto legado de alinhamento / validação (já versionados **nesta pasta**):
   - `etapa4_alinhamento_cursorrules.sql`
   - `etapa5_validacao_pos_migracao.sql`

@@ -40,8 +40,8 @@ Use este checklist apos subir a API em `http://sgm.planifer.com.br:8000`.
 ## 7) Ordens de Serviço
 
 - `POST /api/v1/ordens-servico` cria OS com status `ABERTA`.
-- Mudança de status: `POST /api/v1/ordens-servico/{id}/apontamentos` (**ADMIN**, **TECNICO**, **LUBRIFICADOR**, **LIDER**). Ex.: `AGUARDANDO_APROVACAO` → `FINALIZADA` com checklist `FINALIZACAO_OS` concluído (finalização só **ADMIN**/**LIDER**).
-- **LIDER**: preenche checklist `FINALIZACAO_OS` com OS em `AGUARDANDO_APROVACAO`; cancela OS via apontamento (**ADMIN** ou **LIDER**).
+- Mudança de status: `POST /api/v1/ordens-servico/{id}/apontamentos` (**ADMIN**, **TECNICO**, **LUBRIFICADOR**, **LIDER**). Com alteração de status, a API exige checklists **`LOTO`** e **`LOTO_LIDER`** concluídos, exceto **cancelar** e **ABERTA → AGENDADA** (só agendar). `FINALIZADA` exige ainda **`FINALIZACAO_OS`** (finalização só **ADMIN**/**LIDER**).
+- **LIDER**: preenche **`LOTO_LIDER`** (fora de `AGUARDANDO_APROVACAO`) e checklist **`FINALIZACAO_OS`** com OS em **`AGUARDANDO_APROVACAO`**; cancela OS via apontamento (**ADMIN** ou **LIDER**).
 - Consolidação administrativa (`consolidada=true`, custos): `GET .../consolidacao`, `POST .../consolidar` (**ADMIN**), OS `FINALIZADA` ou `CANCELADA` (cancelada permanece cancelada após consolidar).
 
 ## 8) Relatórios

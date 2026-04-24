@@ -14,7 +14,7 @@ Após uma pausa, **regra única:** especificação de API, perfis, fluxo de OS, 
 | [`deploy/production-hardening.md`](../deploy/production-hardening.md) | Produção (HTTPS, segredos, firewall). |
 | [`database/README.md`](../database/README.md) | Migrações, reset de schema. |
 | [`database/migrations-manual/README.md`](../database/migrations-manual/README.md) | SQL manuais aplicados ao PostgreSQL. |
-| [`scripts/README.md`](../scripts/README.md) | Backup, restore, dev, **`purge_historicos.sh`**, **`install_dependencies.sh`**; helpers em `scripts/lib/`. |
+| [`scripts/README.md`](../scripts/README.md) | Backup, restore, dev, **`update_git.sh`**, **`purge_historicos.sh`**, **`install_dependencies.sh`**; helpers em `scripts/lib/`. |
 | [`docs/DEPENDENCIES.md`](DEPENDENCIES.md) | **Dependências** (APT, Python, PHP, PostgreSQL, vendor JS/CSS) e opções do instalador. |
 | [`docs/MANUAL_USO.md`](MANUAL_USO.md) | **Manual de uso** para utilizadores finais (login, perfis, OS, preventivas, lubrificação, emulsão, cadastros). |
 | [`backend/tests/smoke_checklist.md`](../backend/tests/smoke_checklist.md) | Smoke tests da API. |

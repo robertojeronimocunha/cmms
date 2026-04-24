@@ -22,6 +22,7 @@ Todos os caminhos usam a raiz do repositório automaticamente (funciona em qualq
 | `change_cmms_db_password.sh` | `ALTER USER` no PostgreSQL; atualiza `backend/.env` e `deploy/db-credentials.local`. Uso: `sudo ./scripts/change_cmms_db_password.sh` ou `CMMS_NEW_DB_PASSWORD='...'`. |
 | `reset_cmms_database.sh` | **Destrutivo:** remove schema legado e recria tabelas do FastAPI (`backend/scripts/reset_cmms_schema.py`). Backup antes: `backup_postgres.sh`. Ver `database/README.md`. |
 | `purge_historicos.sh` | **Destrutivo:** purga históricos para go-live (OS, checklists executadas, lubrificação/emulsão, movimentos de estoque, notificações, logs de sistema), zera `pecas.estoque_atual`, põe ativos em `OPERANDO`, remove ficheiros em `UPLOAD_DIR/os_anexos`; mantém cadastros e **não** altera datas de planos/pontos de lubrificação. Execução: `./scripts/purge_historicos.sh` (requer **terminal** com `/dev/tty`; pergunta `s/N`, mostra resumo, exige escrever exatamente `tenho certeza`). Só contagens / sem TTY para inspeção: `./scripts/purge_historicos.sh --dry-run`. |
+| `update_git.sh` | **Commit e push** a partir da raiz do repositório: `git add .`, pede mensagem (ou usa texto com data), `commit` e `push` do **branch atual** para `origin`. Idempotente se não houver alterações. Requer acesso ao remoto. Uso: `./scripts/update_git.sh` (ver `chmod +x` se necessário). |
 | (bootstrap) | `backend/scripts/seed_admin.py` — cria primeiro usuário ADMIN (usa `backend/.env`). Ver `database/README.md`. |
 
 ## Variáveis úteis

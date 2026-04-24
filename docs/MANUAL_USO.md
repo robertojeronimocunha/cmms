@@ -34,7 +34,7 @@ Cada utilizador tem um **perfil** que define o que pode ver e alterar. Resumo pr
 | **TECNICO** | Opera a manutenção: OS (status via **apontamentos**), preventivas, lubrificação, emulsão, consulta a ativos e peças, relatórios. |
 | **LUBRIFICADOR** | Foco em **lubrificação** e **óleo solúvel**; o **menu** mostra sobretudo o **Dashboard Lubrificação** e o grupo **Lubrificação** (**Tarefas**, **Óleo solúvel**). Na API o mesmo perfil pode ter permissões mais amplas (por exemplo OS); o acesso a **Ordens de serviço** no browser depende da política da empresa e do que o menu exibir na sua instalação. |
 | **DIRETORIA** | Visão de leitura na maior parte das áreas; pode **abrir OS** e **anexar/remover ficheiros** nas OS. Adequado a acompanhamento sem operar cadastros. |
-| **LIDER** | Acompanha OS; em estado **Aguardando aprovação** pode trabalhar o checklist de **finalização**; pode alterar o **perfil de usinagem** (leve/pesado) nos ativos. **Finalizar** ou **cancelar** OS segue as mesmas regras que para **ADMIN** (com checklist de finalização concluído quando aplicável). |
+| **LIDER** | Acompanha OS; preenche o checklist **LOTO líder** (`LOTO_LIDER`) após o **LOTO** do técnico; em **Aguardando aprovação** trabalha o checklist de **finalização**. Pode alterar o **perfil de usinagem** (leve/pesado) nos ativos. **Finalizar** ou **cancelar** OS segue as mesmas regras que para **ADMIN** (com checklist de finalização concluído quando aplicável). |
 | **USUARIO** | Operador ou solicitante: **abre** OS, **anexa** fotos/PDF, acompanha o andamento; **não** muda status nem cadastros. Vê sobretudo o dashboard de utilizador e **Ordens de serviço**. |
 
 Se uma página devolver **“acesso negado”** ou **erro 403**, o seu perfil não tem permissão para essa função.
@@ -72,11 +72,13 @@ Os nomes exatos no ecrã podem ser ligeiramente diferentes (ex.: “Itens” par
 2. Escolha o **ativo**, descreva o problema e preencha os campos pedidos.
 3. Opcionalmente marque o ativo como **parado**, se a situação o justificar.
 
-### 5.3 Checklists (LOTO e finalização)
+### 5.3 Checklists (LOTO, LOTO líder e finalização)
 
-- **LOTO** (bloqueio e etiquetagem): em geral é **obrigatório concluir** este checklist para **sair de “Aberta”** para estados operacionais (exceto **Agendada** e **Cancelada**, conforme regras do sistema).
-- **Finalização:** antes de **Finalizar** a OS, o checklist de **finalização** deve estar **concluído** (quem pode editar este checklist em “Aguardando aprovação” inclui **LIDER** e **ADMIN**).
-- A lista de tarefas do checklist pode ser copiada a partir de **padrões** definidos nos cadastros.
+- **LOTO** (bloqueio e etiquetagem, lado operacional): costuma ser preenchido por **técnico** / **lubrificador** / **admin**. É **obrigatório concluir** o **LOTO** e, em seguida, o **LOTO líder** para **alterar o estado** da OS (há exceção para passar de **Aberta** a **Agendada** só para agendar, e **cancelar** segue regras próprias).
+- **LOTO líder** (`LOTO_LIDER`): confirmação de liderança após o LOTO do técnico; preenchido por **LIDER**, **ADMIN** ou **Diretoria** (não pelo técnico). No ecrã, use **Editar checklist** ou **Tarefas** na linha correspondente.
+- **Finalização:** antes de **Finalizar** a OS, o checklist de **finalização** deve estar **concluído** (em “Aguardando aprovação”, **LIDER** e **ADMIN** editam esse checklist).
+- Anexar ficheiros ou pedir peças na OS costuma exigir **LOTO** e **LOTO líder** concluídos enquanto a OS não está encerrada.
+- A lista de tarefas vem de **padrões** nos cadastros; o sistema cria as cópias na OS ao abrir o detalhe (ou ao **garantir padrões**).
 
 ### 5.4 Registar apontamentos (mudar estado)
 
@@ -86,7 +88,7 @@ Os nomes exatos no ecrã podem ser ligeiramente diferentes (ex.: “Itens” par
 
 ### 5.5 Anexos
 
-No detalhe da OS, envie **imagens** ou **PDF** dentro do limite de tamanho definido no servidor. Quem abriu a OS costuma poder remover anexos que tenha carregado, conforme política.
+No detalhe da OS, envie **imagens** ou **PDF** dentro do limite de tamanho definido no servidor. Enquanto a OS está em andamento, o sistema pode exigir as checklists **LOTO** e **LOTO líder** concluídas antes de aceitar novos anexos. Quem abriu a OS costuma poder remover anexos que tenha carregado, conforme política.
 
 ### 5.6 Preventivas geradas pelo sistema
 
