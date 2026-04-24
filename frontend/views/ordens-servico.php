@@ -1083,11 +1083,13 @@
         function checklistStatusResumo(osId) {
             var st = checklistObrigatoriosAtual && checklistObrigatoriosAtual[osId] ? checklistObrigatoriosAtual[osId] : null;
             if (!st) {
-                return '<span class="badge text-bg-light border">LOTO: —</span> <span class="badge text-bg-light border">Finalização: —</span>';
+                return '<span class="badge text-bg-light border">LOTO: —</span> <span class="badge text-bg-light border">LOTO líder: —</span> <span class="badge text-bg-light border">Finalização: —</span>';
             }
             var loto = st.LOTO && st.LOTO.concluido;
+            var lotoLider = st.LOTO_LIDER && st.LOTO_LIDER.concluido;
             var fin = st.FINALIZACAO_OS && st.FINALIZACAO_OS.concluido;
             return '<span class="badge ' + (loto ? 'text-bg-success' : 'text-bg-warning') + '"><i class="fa-solid fa-clipboard-check me-1" aria-hidden="true"></i> LOTO: ' + (loto ? 'OK' : 'Pendente') + '</span> ' +
+                '<span class="badge ' + (lotoLider ? 'text-bg-success' : 'text-bg-warning') + '"><i class="fa-solid fa-user-tie me-1" aria-hidden="true"></i> LOTO líder: ' + (lotoLider ? 'OK' : 'Pendente') + '</span> ' +
                 '<span class="badge ' + (fin ? 'text-bg-success' : 'text-bg-warning') + '"><i class="fa-solid fa-flag-checkered me-1" aria-hidden="true"></i> Finalização: ' + (fin ? 'OK' : 'Pendente') + '</span>';
         }
 
@@ -1616,8 +1618,14 @@
                 return;
             }
             var codEx = String(checklistExecAtual.codigoChecklist || '').trim().toUpperCase();
-            var bloquearEdicaoLider = (perfilAtual === 'LIDER' && codEx !== 'FINALIZACAO_OS');
-            var dis = bloquearEdicaoLider ? ' disabled' : '';
+            var liderPodeEditarCodigo = (codEx === 'FINALIZACAO_OS' || codEx === 'LOTO_LIDER');
+            var bloquearEdicaoLider = (perfilAtual === 'LIDER' && !liderPodeEditarCodigo);
+            var bloquearLotoLiderParaTecnico = (
+                codEx === 'LOTO_LIDER' &&
+                ['TECNICO', 'LUBRIFICADOR'].indexOf(perfilAtual) >= 0
+            );
+            var bloquearEdicaoTarefa = bloquearEdicaoLider || bloquearLotoLiderParaTecnico;
+            var dis = bloquearEdicaoTarefa ? ' disabled' : '';
             tb.innerHTML = rows.map(function (r) {
                 var pre = '';
                 if (r.ultimo_preenchimento_por_nome) {
@@ -1642,9 +1650,12 @@
                     '</tr>';
             }).join('');
             if (bloquearEdicaoLider) {
-                tb.insertAdjacentHTML('afterbegin', '<tr class="table-warning"><td colspan="3" class="small">Nesta OS, o <strong>LIDER</strong> só edita tarefas da checklist <code>FINALIZACAO_OS</code>. Selecione a execução correta em <strong>Checklists aplicadas</strong>.</td></tr>');
+                tb.insertAdjacentHTML('afterbegin', '<tr class="table-warning"><td colspan="3" class="small">Nesta OS, o <strong>LIDER</strong> só edita <code>FINALIZACAO_OS</code> e <code>LOTO_LIDER</code>. Selecione a execução correta em <strong>Checklists aplicadas</strong>.</td></tr>');
             }
-            atualizarBotoesRodapeChecklistTarefas(!bloquearEdicaoLider);
+            if (bloquearLotoLiderParaTecnico) {
+                tb.insertAdjacentHTML('afterbegin', '<tr class="table-warning"><td colspan="3" class="small">O checklist <code>LOTO_LIDER</code> é preenchido apenas por <strong>LIDER</strong>, <strong>ADMIN</strong> ou <strong>DIRETORIA</strong> (validação após o LOTO do técnico).</td></tr>');
+            }
+            atualizarBotoesRodapeChecklistTarefas(!bloquearEdicaoTarefa);
         }
 
         function refreshAposTarefasChecklistSalvar() {
@@ -1773,6 +1784,9 @@
             wrap.innerHTML = list.map(function (r) {
                 var cod = String(r.codigo_checklist || '').trim().toUpperCase();
                 var ehFin = checklistHistoricoEhFinalizacao(r);
+                var ehLotoLider = (cod === 'LOTO_LIDER');
+                var stUp = String(st || '').trim().toUpperCase();
+                var osTerminal = (stUp === 'FINALIZADA' || stUp === 'CANCELADA');
                 var dt = r.created_at ? new Date(r.created_at).toLocaleString('pt-BR') : '—';
                 var pendCount = Number(r.pendencias_obrigatorias || 0);
                 var ok = (r.concluido === true) || (pendCount === 0);
@@ -1783,8 +1797,20 @@
                 var podeEditarEste = false;
                 if (osStatusEhAguardandoAprovacao(st) && ehFin) {
                     podeEditarEste = (perfilAtual === 'LIDER' || perfilAtual === 'ADMIN');
-                } else if (!osStatusEhAguardandoAprovacao(st) && perfilAtual !== 'LIDER') {
+                } else if (
+                    ehLotoLider &&
+                    !osTerminal &&
+                    !osStatusEhAguardandoAprovacao(st) &&
+                    (perfilAtual === 'LIDER' || perfilAtual === 'ADMIN' || perfilAtual === 'DIRETORIA')
+                ) {
+                    /* API só permite LOTO_LIDER fora de AGUARDANDO_APROVACAO; LIDER não caía no ramo abaixo. */
                     podeEditarEste = true;
+                } else if (!osStatusEhAguardandoAprovacao(st) && perfilAtual !== 'LIDER') {
+                    if (ehLotoLider && (perfilAtual === 'TECNICO' || perfilAtual === 'LUBRIFICADOR')) {
+                        podeEditarEste = false;
+                    } else {
+                        podeEditarEste = true;
+                    }
                 }
                 var codAttr = escapeAttr(cod || (ehFin ? 'FINALIZACAO_OS' : ''));
                 var btnEdit = podeEditarEste
@@ -2860,8 +2886,13 @@
             var el = document.getElementById('btnChecklistTarefasSalvar');
             if (!el || el.disabled) return;
             var codEx = String(checklistExecAtual.codigoChecklist || '').trim().toUpperCase();
-            if (perfilAtual === 'LIDER' && codEx !== 'FINALIZACAO_OS') {
-                if (window.cmmsUi) window.cmmsUi.showToast('LIDER só altera tarefas da checklist FINALIZACAO_OS.', 'warning');
+            var liderPodeSalvarCodigo = (codEx === 'FINALIZACAO_OS' || codEx === 'LOTO_LIDER');
+            if (perfilAtual === 'LIDER' && !liderPodeSalvarCodigo) {
+                if (window.cmmsUi) window.cmmsUi.showToast('LIDER só altera tarefas das checklists FINALIZACAO_OS e LOTO_LIDER.', 'warning');
+                return;
+            }
+            if (codEx === 'LOTO_LIDER' && ['TECNICO', 'LUBRIFICADOR'].indexOf(perfilAtual) >= 0) {
+                if (window.cmmsUi) window.cmmsUi.showToast('LOTO_LIDER só pode ser preenchido por LIDER, ADMIN ou DIRETORIA.', 'warning');
                 return;
             }
             var chks = document.querySelectorAll('#checklistExecTarefasTbody tr .js-checklist-task-ok');

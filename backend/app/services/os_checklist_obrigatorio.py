@@ -9,7 +9,10 @@ from app.models.checklist import ChecklistExecutada, ChecklistPadrao, ChecklistT
 from app.models.user import User
 
 CHECKLIST_COD_LOTO = "LOTO"
+CHECKLIST_COD_LOTO_LIDER = "LOTO_LIDER"
 CHECKLIST_COD_FINALIZACAO = "FINALIZACAO_OS"
+
+TERMINAL_OS_STATUSES = frozenset({"FINALIZADA", "CANCELADA"})
 
 
 def has_obrigatorio_concluido(db: Session, work_order_id: UUID, codigo_checklist: str) -> bool:
@@ -43,6 +46,19 @@ def has_obrigatorio_concluido(db: Session, work_order_id: UUID, codigo_checklist
         if not pendente:
             return True
     return False
+
+
+def has_loto_cadeia_concluida(db: Session, work_order_id: UUID) -> bool:
+    """LOTO operacional e validação LOTO_LIDER concluídos (todas as obrigatórias de alguma execução)."""
+    return has_obrigatorio_concluido(db, work_order_id, CHECKLIST_COD_LOTO) and has_obrigatorio_concluido(
+        db, work_order_id, CHECKLIST_COD_LOTO_LIDER
+    )
+
+
+def work_order_exige_loto_cadeia_para_interacao(wo_status: str) -> bool:
+    """Anexos, solicitação de peças etc. exigem a cadeia LOTO completa enquanto a OS não está encerrada."""
+    st = (wo_status or "").strip().upper()
+    return st not in TERMINAL_OS_STATUSES
 
 
 def _execucao_finalizacao_concluida(db: Session, exec_id: UUID) -> bool:

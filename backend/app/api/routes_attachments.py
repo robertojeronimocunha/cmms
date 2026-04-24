@@ -14,6 +14,7 @@ from app.models.work_order_log import WorkOrderLog
 from app.models.work_order import WorkOrder
 from app.schemas.attachment import AttachmentResponse
 from app.services.attachment_service import persist_upload, validate_upload
+from app.services.os_checklist_obrigatorio import has_loto_cadeia_concluida, work_order_exige_loto_cadeia_para_interacao
 
 router = APIRouter(prefix="/ordens-servico", tags=["os-anexos"])
 
@@ -29,6 +30,13 @@ async def upload_attachment(
     work_order = db.get(WorkOrder, work_order_id)
     if not work_order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="OS nao encontrada")
+
+    wo_st = str(work_order.status.value if hasattr(work_order.status, "value") else work_order.status)
+    if work_order_exige_loto_cadeia_para_interacao(wo_st) and not has_loto_cadeia_concluida(db, work_order.id):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Conclua os checklists LOTO e LOTO_LIDER nesta OS antes de anexar arquivos.",
+        )
 
     if os_apontamento_id is not None:
         log = db.get(WorkOrderLog, os_apontamento_id)

@@ -41,11 +41,19 @@ from app.services.checklist_execucao_os import (
     ensure_padroes_obrigatorios_na_os,
     wo_em_fase_finalizacao,
 )
-from app.services.os_checklist_obrigatorio import has_finalizacao_concluida_execucao_criada_por_lider
+from app.services.os_checklist_obrigatorio import (
+    CHECKLIST_COD_LOTO,
+    CHECKLIST_COD_LOTO_LIDER,
+    has_finalizacao_concluida_execucao_criada_por_lider,
+    has_loto_cadeia_concluida,
+    has_obrigatorio_concluido,
+)
 
 router = APIRouter(prefix="/checklists", tags=["checklists"])
-_CHECKLIST_COD_LOTO = "LOTO"
+_CHECKLIST_COD_LOTO = CHECKLIST_COD_LOTO
+_CHECKLIST_COD_LOTO_LIDER = CHECKLIST_COD_LOTO_LIDER
 _CHECKLIST_COD_FINALIZACAO = "FINALIZACAO_OS"
+_LIDER_CHECKLIST_CATALOG = frozenset({_CHECKLIST_COD_FINALIZACAO, _CHECKLIST_COD_LOTO_LIDER})
 
 
 def _norm_checklist_cod(value: str | None) -> str:
@@ -132,7 +140,7 @@ def list_checklists(
     # USUARIO: leitura da lista para o detalhe da OS (copiar ainda bloqueada em POST …/executar).
     q = select(ChecklistPadrao).order_by(ChecklistPadrao.nome.asc()).limit(limit).offset(offset)
     if user.perfil_acesso == "LIDER":
-        q = q.where(ChecklistPadrao.codigo_checklist == _CHECKLIST_COD_FINALIZACAO)
+        q = q.where(ChecklistPadrao.codigo_checklist.in_(_LIDER_CHECKLIST_CATALOG))
     elif user.perfil_acesso not in PERFIS_COM_CATALOGO:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sem permissao")
     if ativo is not None:
@@ -225,8 +233,11 @@ def list_checklist_tasks(
     if not checklist:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Checklist nao encontrado")
     if user.perfil_acesso == "LIDER":
-        if _norm_checklist_cod(checklist.codigo_checklist) != _CHECKLIST_COD_FINALIZACAO:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="LIDER so acessa checklist de finalizacao")
+        if _norm_checklist_cod(checklist.codigo_checklist) not in _LIDER_CHECKLIST_CATALOG:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="LIDER so acessa checklists de finalizacao e LOTO_LIDER",
+            )
     elif user.perfil_acesso not in PERFIS_COM_CATALOGO:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sem permissao")
     q = (
@@ -306,7 +317,7 @@ def garantir_checklists_padroes_obrigatorios(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Cria LOTO e FINALIZACAO_OS na OS se ainda não existirem (abertura do detalhe). Inclui LOTO em AGENDADA; conclusão só exige-se ao sair de ABERTA."""
+    """Cria LOTO, LOTO_LIDER e FINALIZACAO_OS na OS se ainda não existirem (abertura do detalhe)."""
     work_order = db.get(WorkOrder, work_order_id)
     if not work_order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="OS nao encontrada")
@@ -493,7 +504,8 @@ def update_execution_task(
     if not wo:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="OS nao encontrada")
     wo_st = _wo_status_str(wo)
-    if _norm_checklist_cod(padrao.codigo_checklist) == _CHECKLIST_COD_FINALIZACAO:
+    cod = _norm_checklist_cod(padrao.codigo_checklist)
+    if cod == _CHECKLIST_COD_FINALIZACAO:
         if user.perfil_acesso == "LIDER":
             if not wo_em_fase_finalizacao(wo_st):
                 raise HTTPException(
@@ -505,6 +517,30 @@ def update_execution_task(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Apenas LIDER altera o checklist de finalizacao (ADMIN para suporte).",
             )
+    elif cod == _CHECKLIST_COD_LOTO:
+        if user.perfil_acesso not in PERFIS_EXECUTAR_OS:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sem permissao para editar esta tarefa")
+        if wo_em_fase_finalizacao(wo_st):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Com a OS em AGUARDANDO_APROVACAO, apenas o checklist de finalizacao pode ser editado.",
+            )
+    elif cod == _CHECKLIST_COD_LOTO_LIDER:
+        if user.perfil_acesso not in ("LIDER", "ADMIN", "DIRETORIA"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Apenas LIDER, ADMIN ou DIRETORIA editam o checklist LOTO_LIDER.",
+            )
+        if wo_em_fase_finalizacao(wo_st):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Com a OS em AGUARDANDO_APROVACAO, apenas o checklist de finalizacao pode ser editado.",
+            )
+        if not has_obrigatorio_concluido(db, wo.id, _CHECKLIST_COD_LOTO):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Conclua o checklist LOTO antes de preencher o LOTO_LIDER.",
+            )
     else:
         if user.perfil_acesso not in PERFIS_EXECUTAR_OS:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sem permissao para editar esta tarefa")
@@ -512,6 +548,11 @@ def update_execution_task(
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="Com a OS em AGUARDANDO_APROVACAO, apenas o checklist de finalizacao pode ser editado.",
+            )
+        if not has_loto_cadeia_concluida(db, wo.id):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Conclua os checklists LOTO e LOTO_LIDER antes de editar outras checklists nesta OS.",
             )
     data = payload.model_dump(exclude_none=True)
     mudou = False
@@ -549,7 +590,8 @@ def get_required_checklists_status(
     if not work_order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="OS nao encontrada")
     loto = _required_checklist_status(db, work_order_id, _CHECKLIST_COD_LOTO)
+    loto_lider = _required_checklist_status(db, work_order_id, _CHECKLIST_COD_LOTO_LIDER)
     fin = _required_checklist_status(db, work_order_id, _CHECKLIST_COD_FINALIZACAO)
     lider_ok = has_finalizacao_concluida_execucao_criada_por_lider(db, work_order_id)
     fin_out = fin.model_copy(update={"concluido_copia_lider": lider_ok})
-    return [loto, fin_out]
+    return [loto, loto_lider, fin_out]

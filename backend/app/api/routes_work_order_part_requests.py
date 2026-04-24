@@ -11,6 +11,7 @@ from app.models.user import User
 from app.models.work_order import WorkOrder
 from app.models.work_order_log import WorkOrderLog
 from app.models.work_order_part_request import WorkOrderPartRequest
+from app.services.os_checklist_obrigatorio import has_loto_cadeia_concluida, work_order_exige_loto_cadeia_para_interacao
 from app.schemas.work_order_part_request import (
     WorkOrderPartRequestCreate,
     WorkOrderPartRequestResponse,
@@ -68,6 +69,13 @@ def create_part_request(
     work_order = db.get(WorkOrder, work_order_id)
     if not work_order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="OS nao encontrada")
+
+    wo_st = str(work_order.status.value if hasattr(work_order.status, "value") else work_order.status)
+    if work_order_exige_loto_cadeia_para_interacao(wo_st) and not has_loto_cadeia_concluida(db, work_order.id):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Conclua os checklists LOTO e LOTO_LIDER nesta OS antes de solicitar pecas.",
+        )
 
     descricao = payload.descricao.strip()
     codigo = (payload.codigo_peca or "").strip() or None

@@ -1,4 +1,4 @@
-"""Execução de plano de preventiva: cria OS PREVENTIVA em AGENDADA, inclui LOTO/FINALIZACAO (cópias) e vincula checklist da TAG."""
+"""Execução de plano de preventiva: cria OS PREVENTIVA em AGENDADA, inclui LOTO, LOTO_LIDER, FINALIZACAO_OS e vincula checklist da TAG."""
 
 from __future__ import annotations
 
@@ -40,8 +40,8 @@ def executar_plano_criar_os(
     user: User,
 ) -> WorkOrder:
     """
-    Valida TAG + checklist, cria OS PREVENTIVA em AGENDADA, garante LOTO e FINALIZACAO (cópias na OS),
-    vincula checklist da tag. LOTO concluído não é exigido em AGENDADA; ao sair de ABERTA, a API exige LOTO.
+    Valida TAG + checklist, cria OS PREVENTIVA em AGENDADA, garante LOTO, LOTO_LIDER e FINALIZACAO_OS na OS,
+    vincula checklist da tag. A cadeia LOTO não precisa estar concluída para o vínculo pelo TAG.
     atualiza datas do plano. Commits no fluxo.
     """
     if not plan.ativo:

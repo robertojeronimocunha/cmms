@@ -18,6 +18,8 @@ from app.services.estoque_os_baixa import baixa_estoque_ao_finalizar_os
 from app.services.os_checklist_obrigatorio import (
     CHECKLIST_COD_FINALIZACAO,
     CHECKLIST_COD_LOTO,
+    CHECKLIST_COD_LOTO_LIDER,
+    has_loto_cadeia_concluida,
     has_obrigatorio_concluido,
 )
 from app.services.work_order_service import can_transition
@@ -125,20 +127,20 @@ def create_work_order_log(
 
     if status_novo != "CANCELADA":
         checklist_parts: list[str] = []
-        if status_anterior == "ABERTA" and status_novo not in (
-            "ABERTA",
-            "CANCELADA",
-            "AGENDADA",  # pode definir AGENDADA sem LOTO concluído; demais saídas de ABERTA exigem LOTO
-        ):
-            if not has_obrigatorio_concluido(db, work_order.id, CHECKLIST_COD_LOTO):
+        precisa_loto_cadeia = status_novo != status_anterior and not (
+            status_anterior == "ABERTA" and status_novo == "AGENDADA"
+        )
+        if precisa_loto_cadeia:
+            if not has_loto_cadeia_concluida(db, work_order.id):
                 raise HTTPException(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                     detail=(
-                        "Para sair de ABERTA, execute e conclua o checklist obrigatório "
-                        f"'{CHECKLIST_COD_LOTO}' nesta OS."
+                        "Antes desta mudança de status, execute e conclua os checklists obrigatórios "
+                        f"'{CHECKLIST_COD_LOTO}' e '{CHECKLIST_COD_LOTO_LIDER}' nesta OS."
                     ),
                 )
             checklist_parts.append(f"CHECKLIST_OK: {CHECKLIST_COD_LOTO}")
+            checklist_parts.append(f"CHECKLIST_OK: {CHECKLIST_COD_LOTO_LIDER}")
         if status_novo == "FINALIZADA":
             if not has_obrigatorio_concluido(db, work_order.id, CHECKLIST_COD_FINALIZACAO):
                 raise HTTPException(

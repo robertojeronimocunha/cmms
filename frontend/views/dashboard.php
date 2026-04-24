@@ -211,11 +211,13 @@
         function checklistStatusResumoDash(osId) {
             var st = checklistObrigatoriosDash && checklistObrigatoriosDash[osId] ? checklistObrigatoriosDash[osId] : null;
             if (!st) {
-                return '<span class="badge text-bg-light border">LOTO: —</span> <span class="badge text-bg-light border">Finalização: —</span>';
+                return '<span class="badge text-bg-light border">LOTO: —</span> <span class="badge text-bg-light border">LOTO líder: —</span> <span class="badge text-bg-light border">Finalização: —</span>';
             }
             var loto = st.LOTO && st.LOTO.concluido;
+            var lotoLider = st.LOTO_LIDER && st.LOTO_LIDER.concluido;
             var fin = st.FINALIZACAO_OS && st.FINALIZACAO_OS.concluido;
             return '<span class="badge ' + (loto ? 'text-bg-success' : 'text-bg-warning') + '">LOTO: ' + (loto ? 'OK' : 'Pendente') + '</span> ' +
+                '<span class="badge ' + (lotoLider ? 'text-bg-success' : 'text-bg-warning') + '">LOTO líder: ' + (lotoLider ? 'OK' : 'Pendente') + '</span> ' +
                 '<span class="badge ' + (fin ? 'text-bg-success' : 'text-bg-warning') + '">Finalização: ' + (fin ? 'OK' : 'Pendente') + '</span>';
         }
 
