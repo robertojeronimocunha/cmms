@@ -1,0 +1,40 @@
+# ----------------------------------------------------------------------
+# 1. CONFIGURAÇÕES DE SEGURANÇA BÁSICA
+# ----------------------------------------------------------------------
+
+# Impede a listagem de arquivos em qualquer pasta (evita que vejam sua árvore de arquivos)
+Options -Indexes
+
+# Protege arquivos sensíveis contra leitura direta pelo navegador
+<FilesMatch "\.(ini|log|py|txt|bak|sql)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Bloqueia acesso direto às pastas de lógica interna (O usuário não precisa entrar nelas)
+# NOTA: Removemos 'api' daqui para não quebrar os scripts de busca de dados
+RedirectMatch 403 ^/(config|src|includes|backup)/.*$
+
+# ----------------------------------------------------------------------
+# 2. REGRAS DE REWRITE (URLS AMIGÁVEIS)
+# ----------------------------------------------------------------------
+
+RewriteEngine On
+
+# Impede que o site seja aberto dentro de Iframes de OUTROS sites (Segurança Anti-Clickjacking)
+# Mas permite que funcione no SEU próprio Iframe
+Header set X-Frame-Options "SAMEORIGIN"
+
+# Remove a extensão .php da URL visualmente
+# Exemplo: seusite.com/lub/app_lubrificacao funciona mesmo sem o .php no final
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}\.php -f
+RewriteRule ^([^\.]+)$ $1.php [NC,L]
+
+# ----------------------------------------------------------------------
+# 3. TRATAMENTO DE ERROS (OPCIONAL)
+# ----------------------------------------------------------------------
+
+# Se o usuário tentar acessar algo proibido ou inexistente, manda para o index
+ErrorDocument 403 /index.php
+ErrorDocument 404 /index.php

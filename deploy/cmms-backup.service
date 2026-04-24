@@ -1,0 +1,11 @@
+[Unit]
+Description=CMMS backup PostgreSQL (pg_dump)
+After=postgresql.service
+
+[Service]
+Type=oneshot
+# O script lê /var/www/html/backend/.env (DATABASE_URL). Ajuste permissões do .env se necessário.
+ExecStart=/var/www/html/scripts/backup_postgres.sh
+
+[Install]
+WantedBy=multi-user.target

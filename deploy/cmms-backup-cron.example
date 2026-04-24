@@ -1,0 +1,14 @@
+# Agendamento root — backup PostgreSQL + backup de sistema a cada 6 horas; mantém 12 de cada tipo.
+#
+# Instalar:
+#   sudo crontab -e
+#   # colar a linha abaixo (sem # inicial)
+#
+# Log: /var/log/cmms-backup-cron.log
+#
+# Variáveis (opcional, antes do caminho do script na mesma linha):
+#   CMMS_SCHEDULE_KEEP=12 CMMS_SCHEDULE_SKIP_SYSTEM=0
+#
+# SKIP_SYSTEM=1 — só pg_dump (útil se backup de sistema for pesado demais a cada 6 h).
+
+0 */6 * * * /var/www/html/scripts/cmms_backup_scheduled.sh >> /var/log/cmms-backup-cron.log 2>&1

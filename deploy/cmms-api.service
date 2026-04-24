@@ -1,0 +1,22 @@
+[Unit]
+Description=CMMS FastAPI (Uvicorn)
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/html/backend
+EnvironmentFile=-/var/www/html/backend/.env
+ExecStart=/var/www/html/backend/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2
+Restart=on-failure
+RestartSec=3
+
+# Hardening: NoNewPrivileges=true impede sudo (setuid); a UI de backup de sistema precisa de
+# `sudo -n` nos scripts. Mantenha false se usar /api/v1/admin/backup/system/* com sudoers restrito.
+NoNewPrivileges=false
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,1 @@
+/var/www/html/frontend/public/js

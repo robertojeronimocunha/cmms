@@ -1,0 +1,27 @@
+# CMMS — sudo sem senha para backup/restauração de sistema pela API (www-data)
+#
+# O serviço cmms-api DEVE ter NoNewPrivileges=false (ver deploy/cmms-api.service), senão o
+# kernel bloqueia setuid e o sudo não sobe a root (erro "no new privileges flag is set").
+#
+# Instalação (Debian/Ubuntu) — confira os caminhos antes:
+#   sudo cp deploy/sudoers-cmms-backup-ui.example /etc/sudoers.d/cmms-backup-ui
+#   sudo chmod 440 /etc/sudoers.d/cmms-backup-ui && sudo chown root:root /etc/sudoers.d/cmms-backup-ui
+#   sudo visudo -cf /etc/sudoers.d/cmms-backup-ui
+#
+# Depois:
+#   sudo systemctl daemon-reload && sudo systemctl restart cmms-api
+#
+# Preserva destino do backup e raiz web enviados pela API (subprocess env → processo root do script).
+Defaults:www-data env_keep += "RAIZ_BACKUP WEB_DIR CMMS_BACKUP_DB_DELETE_DIR CMMS_AGENDADOR_LOG"
+#
+# Nota: restore.sh recebe o caminho do .tar como argumento; o sufixo * autoriza qualquer argumento
+# apenas para esse binário (recomendado manter os scripts só editáveis por root).
+
+www-data ALL=(root) NOPASSWD: /var/www/html/scripts/backup_sistema.sh
+# Vendor frontend (agendador): grava em frontend/public/assets/vendor sem falha curl (23).
+www-data ALL=(root) NOPASSWD: /var/www/html/scripts/update-frontend-vendor.sh
+www-data ALL=(root) NOPASSWD: /var/www/html/scripts/cmms_agendador_log_maint.sh
+www-data ALL=(root) NOPASSWD: /var/www/html/scripts/cmms_backup_scheduled.sh
+www-data ALL=(root) NOPASSWD: /var/www/html/scripts/cmms_delete_system_backup.sh *
+www-data ALL=(root) NOPASSWD: /var/www/html/scripts/cmms_delete_db_backup.sh *
+www-data ALL=(root) NOPASSWD: /var/www/html/scripts/restore.sh *

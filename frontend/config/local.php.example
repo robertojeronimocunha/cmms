@@ -1,0 +1,7 @@
+<?php
+/**
+ * Copie para local.php (gitignored) para sobrescrever a API Base em desenvolvimento.
+ *
+ *   cp frontend/config/local.php.example frontend/config/local.php
+ */
+$cmmsApiBaseDefault = 'http://127.0.0.1:8000/api/v1';

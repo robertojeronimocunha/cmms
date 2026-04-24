@@ -1,0 +1,26 @@
+# Rascunhos na raiz do projeto (editores / testes manuais)
+.tmp*
+/ativos.json
+
+# Cursor (opcional: não versionar regras locais da IDE)
+.cursor/
+
+# Segredos locais (não versionar)
+backend/.env
+deploy/db-credentials.local
+frontend/config/local.php
+
+# Backups locais gerados pela UI / API (não versionar)
+var/
+
+# Frontend: JS/CSS vendor (gerar com: bash scripts/update-frontend-vendor.sh)
+# Para clonar 100% offline, inclua esta pasta no arquivo/VM ou versione estes ficheiros.
+/frontend/public/assets/vendor/**
+!/frontend/public/assets/vendor/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+backend/venv/
+.pytest_cache/
+*.egg-info/

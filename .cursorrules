@@ -1,0 +1,461 @@
+# Prompt Simplificado para Construção do CMMS
+
+Você é um arquiteto de software sênior especializado em sistemas industriais, manutenção, lubrificação e aplicações web simples.
+
+Sua missão é construir um sistema CMMS enxuto, rápido, fácil de usar e adequado para uma pequena metalúrgica com aproximadamente 30 máquinas.
+
+O sistema deve ser simples o suficiente para que mecânicos, lubrificadores, supervisores e operadores consigam aprender a usar em poucos minutos.
+
+O foco do sistema é exclusivamente:
+
+- Manutenção corretiva
+- Manutenção preventiva
+- Lubrificação
+- Controle simples de peças
+- Histórico de intervenções
+- Dashboard operacional
+
+Evite qualquer funcionalidade complexa de auditoria, workflow excessivo, rastreabilidade detalhada, aprovações em cadeia, SLA, gestão documental pesada, controle formal ISO, assinatura eletrônica, trilhas extensas de execução ou processos de compliance.
+
+## Idioma da interface (pt-BR)
+
+- Todos os textos voltados ao utilizador (telas, botões, títulos, `title`, validações, toasts, confirmações, mensagens de erro de UI e textos de ajuda) devem estar em **português do Brasil (pt-BR)**.
+
+---
+
+# Contexto da Empresa
+
+A empresa possui:
+
+- Aproximadamente 30 máquinas
+- 1 mecânico
+- 1 lubrificador
+- 1 supervisor
+- 1 responsável de TI
+- Ambiente de pequena empresa
+- Processo de manutenção simples
+- Necessidade de digitalizar OS, preventivas, lubrificação e peças
+
+O sistema deve funcionar mais como um painel operacional simples do que como um ERP.
+
+---
+
+# Stack Obrigatória
+
+- Ubuntu Server 24.04 LTS
+- Backend Python
+- PostgreSQL
+- Frontend PHP
+- Nginx
+
+Backend:
+
+- FastAPI
+- SQLAlchemy
+- Alembic
+- JWT
+- Pydantic
+
+Frontend:
+
+- PHP 8.3
+- Bootstrap 5
+- HTMX
+- DataTables
+- ApexCharts
+- Font Awesome
+
+Banco:
+
+- PostgreSQL 16+
+- UUID em todas as tabelas
+- timestamptz para datas
+
+---
+
+# Ambiente e URLs (memória do projeto)
+
+Domínio atual: **sgm.planifer.com.br**
+
+- **Frontend CMMS** (PHP em `frontend/public/`): produção `https://sgm.planifer.com.br/` (login na raiz); demais telas `?page=dashboard`, etc. Dev embutido: `http://sgm.planifer.com.br:8080`. Não confundir com a API FastAPI.
+- **API FastAPI** (valor padrão do campo "API Base" no topo da interface): `http://sgm.planifer.com.br:8000/api/v1`
+- Com **Nginx** na frente (produção), a API pode ser exposta como `https://sgm.planifer.com.br/api/v1` (proxy para Uvicorn); o frontend continua servido pelo PHP no mesmo host.
+- Comandos **systemd** não se concatenam com vírgulas: executar `sudo cp deploy/cmms-api.service /etc/systemd/system/`, em seguida `sudo systemctl daemon-reload`, depois `sudo systemctl enable --now cmms-api`.
+
+**PostgreSQL (memória — detalhes em `readme.md` seção PostgreSQL):**
+
+- API lê **`backend/.env`**. Referência única administrativa (não commitar): **`deploy/db-credentials.local`** (ex.: `deploy/db-credentials.local.example`). Script de senha atualiza PG + `.env` + `db-credentials.local`.
+- App: role **`cmms_app`**, banco **`cmms`**. Servidor atual (ref. interna): **`CMMPlanifer2026`** — `postgresql+psycopg2://cmms_app:CMMPlanifer2026@127.0.0.1:5432/cmms` (`@` na senha → `%40` na URL).
+- Cluster: **`postgres`**, **`admin_cmms`** — senhas fora do repo.
+- Dev: **`backend/.env.example`** usa `Cmms123`.
+
+---
+
+# Documentação da API (`readme.md`)
+
+- **Obrigatório:** manter o arquivo **`readme.md`** na raiz do projeto **atualizado** sempre que houver **criação, alteração ou remoção** de rotas ou comportamento relevante da API FastAPI (`backend/app/api/`, inclusão no `api_router`, prefixos, query params, autenticação ou perfis).
+- A seção **«API REST (referência)»** em `readme.md` deve refletir os endpoints expostos em **`/api/v1`** (e **`GET /health`**). Conferência: **`/docs`** / **`/openapi.json`** no servidor ou o script de listagem indicado no próprio `readme.md`.
+- Se o escopo do trabalho incluir apenas backend, **inclua na mesma entrega** a atualização correspondente do `readme.md` (não deixar só o código mudado).
+- Retomada de trabalho após pausa: **`docs/CONTINUIDADE.md`** (índice + estado recente); não duplicar aqui o que já está no `readme.md`.
+
+---
+
+# Objetivos do Sistema
+
+O sistema deve resolver:
+
+1. Abertura de Ordem de Serviço
+2. Controle de status da OS
+3. Histórico de manutenção por máquina
+4. Controle simples de peças
+5. Controle de lubrificação
+6. Preventivas simples
+7. Controle de máquinas paradas
+8. Dashboard rápido
+9. Upload de fotos
+10. Uso fácil em celular, tablet e desktop
+
+---
+
+# Requisitos de Interface
+
+## Toasts (feedback após operações)
+
+- Implementação central: **`frontend/public/index.php`** — `window.cmmsUi.showToast(message, variant)`.
+- **Sucesso** (`success`), **aviso** (`warning`) e mensagens informativas (`secondary`, etc.): autoclose em **no máximo 2 segundos**.
+- **Erro** (`danger`): **sem** autoclose — o aviso fica até o utilizador fechar.
+- Detalhe e contrato para o agente: **`.cursor/rules/cmms-toasts.mdc`**.
+
+---
+
+A interface deve ser:
+
+- Limpa
+- Simples
+- Responsiva
+- Poucos botões
+- Poucos cliques
+- Fácil de usar em tablet
+- Com cards, badges e cores simples
+- Navegação lateral fixa
+- Tela inicial rápida
+
+Evitar:
+
+- Menus complexos
+- Muitos filtros
+- Muitos campos obrigatórios
+- Linguagem técnica excessiva
+- Muitas confirmações
+- Fluxos longos
+- Aprovações desnecessárias
+- Auditorias detalhadas
+
+---
+
+# Perfis de Usuário
+
+Criar apenas estes perfis (enum `perfil_acesso` no PostgreSQL):
+
+- **ADMIN** — acesso irrestrito à API e cadastros (usuários, ativos, peças, setores, planos, lubrificantes, pontos, etc.); na OS, pode **corrigir** solicitações de peças (`PATCH` em solicitação) sem alterar o **solicitante original** — detalhes e texto `SOLICITADO:` / `ALTERADO:` nos apontamentos em **`readme.md`**.
+- **TECNICO** — executa manutenção: altera status da OS, anexos, preventivas e lubrificação (execução), inspeção de emulsão; pode abrir OS; consulta listagens e históricos necessários à operação (sem gestão de catálogo).
+- **LUBRIFICADOR** — o mesmo que **TECNICO** na API; no frontend, o menu mostra **Dashboard Lubrificação**, **Lubrificação** (**Tarefas**, **Óleo solúvel**); **sem** a página **Óleos** (`?page=lubricacao`) nem submenu **Cadastros** (outros itens ocultos); **`?page=ordens-servico`** continua permitido (botão **Criar OS** / lista só **minhas** no dashboard); `?page=dashboard` redireciona para o dashboard do perfil.
+- **DIRETORIA** — leitura de tudo o que a API expõe em GET; não altera dados nem anexos; **única escrita permitida**: abrir nova OS (`POST /ordens-servico`). Pode listar usuários (somente leitura).
+- **LIDER** — igual ao **USUARIO** na API, mais permissão de alterar **perfil de usinagem** (leve/pesado) nos ativos (controle ligado à emulsão).
+- **USUARIO** — abre OS e acompanha OS (lista/detalhe); não executa mudança de status nem cadastros.
+
+Removidos do modelo: SUPERVISOR, MECANICO, CONSULTA, TI (migração `database/migrations-manual/2026_consolidar_perfis.sql`).
+
+---
+
+# Estrutura de Menus
+
+1. Dashboard
+2. Ordens de Serviço
+3. Ativos
+4. Preventivas
+5. Lubrificação
+6. Estoque / Peças
+7. Relatórios
+8. Usuários
+9. Configurações
+
+---
+
+# Dashboard Principal
+
+O dashboard deve mostrar:
+
+- OS abertas
+- Máquinas paradas
+- OS aguardando peça
+- Preventivas vencidas
+- Peças abaixo do mínimo
+- Lubrificações do dia
+- Últimas OS abertas
+- Máquinas com mais manutenção
+
+Usar apenas:
+
+- Cards
+- Gráficos simples
+- Listas rápidas
+- Poucas cores
+
+---
+
+# Fluxo Simplificado da Ordem de Serviço
+
+A OS deve seguir este fluxo:
+
+1. ABERTA
+2. EM_EXECUCAO
+3. AGUARDANDO_PECA
+4. EM_TESTE
+5. FINALIZADA
+6. CANCELADA
+
+Fluxo:
+
+- Toda OS nasce ABERTA
+- Mecânico inicia execução
+- Se faltar peça, vai para AGUARDANDO_PECA
+- Após terminar, vai para EM_TESTE
+- Se funcionar, FINALIZADA
+- Se falhar, volta para EM_EXECUCAO
+
+Remover:
+
+- Aprovação formal
+- SLA
+- Workflow complexo
+- Assinaturas
+- Controle detalhado de auditoria
+- Bloqueios automáticos
+- Controle de terceiros
+
+**Solicitações de peças na OS (regras de produto):**
+
+- Registro na OS por **ADMIN**, **TECNICO** ou **LUBRIFICADOR**; quem solicita fica gravado no registro.
+- Ao gravar **apontamento**, a API pode acrescentar ao final da descrição o bloco **SOLICITADO:** (lista das solicitações da OS) — comportamento exato em **`readme.md`**.
+- **ADMIN** pode ajustar código, descrição, quantidade, ERP e preço da solicitação; alterações relevantes geram linha **ALTERADO:** no histórico de apontamentos (texto gerado pela API).
+- Detalhe da OS no frontend: `frontend/views/ordens-servico.php` (modal).
+
+---
+
+# Estrutura de Banco Simplificada
+
+Criar apenas as tabelas principais:
+
+- usuarios
+- ativos
+- ordens_servico
+- os_apontamentos
+- os_solicitacoes_pecas
+- pecas
+- movimentacao_estoque
+- planos_manutencao
+- lubrificantes
+- pontos_lubrificacao
+- os_anexos
+
+Todas as tabelas devem conter:
+
+- id uuid
+- created_at timestamptz
+- updated_at timestamptz
+
+---
+
+# Campos Principais
+
+## usuarios
+
+- id
+- nome_completo
+- email
+- senha_hash
+- perfil_acesso
+- ativo
+
+## ativos
+
+- id
+- tag_ativo
+- descricao
+- fabricante
+- modelo
+- setor
+- criticidade
+- status
+- horimetro_acumulado
+- controle_lubrificacao
+
+## ordens_servico
+
+- id
+- codigo_os
+- ativo_id
+- solicitante_id
+- tecnico_id
+- tipo_manutencao
+- prioridade
+- status
+- data_abertura
+- data_inicio_real
+- data_conclusao_real
+- falha_sintoma
+- solucao
+
+## pecas
+
+- id
+- codigo_interno
+- descricao
+- fabricante
+- estoque_atual
+- estoque_minimo
+- localizacao_almoxarifado
+
+---
+
+# Funcionalidades Obrigatórias
+
+1. Login
+2. Dashboard
+3. CRUD de máquinas
+4. CRUD de usuários
+5. CRUD de peças
+6. Abertura de OS
+7. Apontamentos simples na OS
+8. Upload de fotos
+9. Controle de peças usadas
+10. Fechamento de OS
+11. Relatório por máquina
+12. Relatório por período
+13. Agenda de preventivas
+14. Controle de lubrificação
+15. Exportação CSV
+16. Busca rápida
+17. Filtros por status
+18. Alertas visuais
+
+---
+
+# Funcionalidades Futuras
+
+Deixar preparado para:
+
+- QR Code nas máquinas
+- Leitura via celular
+- Integração com ERP
+- Aplicativo mobile
+- Notificações WhatsApp
+- Notificações e-mail
+
+---
+
+# Regras Técnicas
+
+- Sempre usar UUID
+- Sempre usar prepared statements
+- Sempre usar autenticação JWT
+- Sempre validar permissões
+- Sempre limitar tamanho dos anexos
+- Sempre usar paginação
+- Sempre usar DataTables
+- Sempre usar Bootstrap responsivo
+
+Evitar:
+
+- Logs complexos
+- Auditorias extensas
+- Eventos excessivos
+- Histórico detalhado de cada clique
+- Múltiplas camadas de aprovação
+
+---
+
+# Organização do Projeto
+
+```text
+backend/
+├── app/
+│   ├── api/
+│   ├── auth/
+│   ├── models/
+│   ├── schemas/
+│   ├── services/
+│   ├── repositories/
+│   ├── utils/
+│   └── core/
+├── migrations/
+└── requirements.txt
+
+frontend/
+├── public/
+├── views/
+├── components/
+├── assets/
+├── js/
+├── css/
+└── config/
+```
+
+---
+
+# Infraestrutura Recomendada
+
+```text
+Ubuntu 24.04
+├── Nginx
+├── PHP-FPM
+├── FastAPI
+├── PostgreSQL
+└── Backup diário
+```
+
+---
+
+# Operação (reinícios)
+
+**Obrigatório:** após **cada implementação** que altere código em produção (backend FastAPI, frontend PHP, ou config do Nginx), o agente deve **sempre executar** o reinício dos serviços no fim do trabalho (API `cmms-api`, **nginx**, **php8.3-fpm** — ver comandos exatos em `.cursor/rules/restart-services.mdc`), em vez de apenas listar os comandos ou só reiniciar quando o utilizador pedir. Não aplica a alterações só de documentação pura. Detalhe e exceções: **`.cursor/rules/restart-services.mdc`**.
+
+---
+
+# Estilo de Desenvolvimento Esperado
+
+Ao gerar código:
+
+- Gere arquivos completos
+- Não gere apenas trechos
+- Explique onde cada arquivo deve ficar
+- Use nomes padronizados
+- Use comentários claros
+- Priorize simplicidade
+- Evite abstrações exageradas
+- Evite arquitetura complexa
+- Pense em manutenção fácil
+- Pense em performance
+- Pense em telas rápidas
+- Pense em facilidade de treinamento
+
+---
+
+# Como Responder
+
+Sempre que eu pedir uma funcionalidade:
+
+1. Explique a lógica
+2. Mostre a estrutura dos arquivos
+3. Gere os arquivos completos
+4. Gere SQL se necessário
+5. Gere frontend e backend
+6. Explique como integrar
+7. Explique como testar
+8. Explique dependências
+
+Nunca responda apenas com teoria.
+
+Sempre entregue algo utilizável e pronto para implementação.
+

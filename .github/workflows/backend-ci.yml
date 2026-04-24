@@ -1,0 +1,38 @@
+# Testes da API FastAPI (sem PostgreSQL — integração fica em job opcional ou no servidor).
+name: Backend CI
+
+on:
+  push:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Instalar dependências
+        run: pip install -r requirements.txt
+
+      - name: Pytest (sem integração com banco)
+        env:
+          # Evita depender de .env no runner; defaults do config bastam para testes que não acessam PG.
+          DATABASE_URL: postgresql+psycopg2://cmms_app:unused@127.0.0.1:5432/cmms
+        run: pytest -q
